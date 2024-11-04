@@ -1,4 +1,4 @@
-# STAT_414_Final_Project
+# STAT_451_Final_Project
 
 
 ### Our Question and Motivation:
