@@ -1,0 +1,112 @@
+---
+title: "FinalProject"
+author: "Eliot Ozaki, Glit Hanpanitkitkan, Ethan Kawahara, Andrew Sousa"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libs}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+```
+
+
+```{r data}
+gdp_data = read.csv("API_NY.GDP.PCAP.CD_DS2_en_csv_v2_9803.csv")
+demog_data = read.csv("UNdata_Export_20241103_204254970.csv")
+gdpmeta_data = read.csv("Metadata_Country_API_NY.GDP.PCAP.CD_DS2_en_csv_v2_9803.csv")
+```
+
+# Final Project
+
+
+### Introductory Analysis
+```{r}
+# Selecting only X2000-X2005 from the GDP data
+gdp_data = gdp_data %>% select(1:2, 44:50)
+# Renaming the columns
+colnames(gdp_data) = c("CountryName", "CountryCode", "1999","2000", "2001", "2002", "2003", "2004", "2005")
+print(sum(is.na(gdp_data)))
+
+# Printing num.na in each column:
+print(colSums(is.na(gdp_data)))
+head(gdp_data)
+```
+
+
+```{r}
+tail(demog_data, 15)
+## Dropping the last 6 rows
+demog_data = demog_data[1:2338,]
+
+## Changing values of '-' to 0
+demog_data = demog_data %>% mutate_all(funs(ifelse(. == "-", 0, .)))
+
+demog_data$Value = as.numeric(demog_data$Value)
+print(colSums(is.na(demog_data)))
+
+print(summary(demog_data))
+
+demog_data = demog_data %>% select(-Value.Footnotes)
+
+# spreading demog data by Year
+demog_data = demog_data %>% spread(key = Year, value = Value)
+print(sum(is.na(demog_data)))
+head(demog_data)
+
+
+for (i in 1:6) {
+  demog_data$`1999` = ifelse(is.na(demog_data$`1999`), demog_data$`2000`, demog_data$`1999`)
+  demog_data$`2000` = ifelse(is.na(demog_data$`2000`), demog_data$`2001`, demog_data$`2000`)
+  demog_data$`2001` = ifelse(is.na(demog_data$`2001`), demog_data$`2002`, demog_data$`2001`)
+  demog_data$`2002` = ifelse(is.na(demog_data$`2002`), demog_data$`2003`, demog_data$`2002`)
+  demog_data$`2003` = ifelse(is.na(demog_data$`2003`), demog_data$`2004`, demog_data$`2003`)
+  demog_data$`2004` = ifelse(is.na(demog_data$`2004`), demog_data$`2005`, demog_data$`2004`)
+
+  demog_data$`2005` = ifelse(is.na(demog_data$`2005`), demog_data$`2004`, demog_data$`2005`)
+  demog_data$`2004` = ifelse(is.na(demog_data$`2004`), demog_data$`2003`, demog_data$`2004`)
+  demog_data$`2003` = ifelse(is.na(demog_data$`2003`), demog_data$`2002`, demog_data$`2003`)
+  demog_data$`2002` = ifelse(is.na(demog_data$`2002`), demog_data$`2001`, demog_data$`2002`)
+  demog_data$`2001` = ifelse(is.na(demog_data$`2001`), demog_data$`2000`, demog_data$`2001`)
+  demog_data$`2000` = ifelse(is.na(demog_data$`2000`), demog_data$`1999`, demog_data$`2000`)
+
+}
+
+
+## Printing cols where all year values are NA
+print(sum(is.na(demog_data)))
+demog_data = demog_data %>% select(-Unit)
+
+```
+
+
+```{r}
+print(summary(gdpmeta_data))
+
+print(colSums(is.na(gdpmeta_data)))
+
+gdpmeta_data$Region = ifelse(gdpmeta_data$Region == "", "Other", gdpmeta_data$Region)
+gdpmeta_data$IncomeGroup = ifelse(gdpmeta_data$IncomeGroup == "", "Other", gdpmeta_data$IncomeGroup)
+
+## Renaming Country Code
+colnames(gdpmeta_data)[1] = "CountryCode"
+```
+
+```{r}
+## Merging gdp and gdpmeta datasets
+gdp_data = merge(gdp_data, gdpmeta_data, by = "CountryCode")
+
+summary(gdp_data)
+```
+
+##### Our Question
+Our question will be: How did income level affect ratio of women to men who enroll in secondary education from 1999-2005? We will answer this question using GDP and demographic data, looking at the general change, change by region, change by income group of a country, and change by large country. The hypothesis is that higher income countries will have a higher ratio of women to men who enroll in secondary education. The data we will be looking at is from the world bank (income) and UN data (enrollment in secondary education).
+
+ 
+
+
