@@ -1,5 +1,5 @@
 # STAT_451_Final_Project
-
+## Eliot Ozaki, Glit Hanpanitkitkan, Ethan Kawahara, Andrew Sousa
 
 ### Our Question and Motivation:
 ##### How does a country's income (GDP per capita in USD) affect the enrollment rates of men and women, and how do they differ between each regions of the world from 1999 to 2005? 
