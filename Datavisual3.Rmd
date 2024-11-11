@@ -1,0 +1,166 @@
+---
+title: "Final Project 3rd Data Visual (Glit)"
+author: "Eliot Ozaki, Glit Hanpanitkitkan, Ethan Kawahara, Andrew Sousa"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libs}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(countrycode)
+```
+
+
+```{r data}
+#setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) # Requires RStudio
+
+gdp_data = read.csv("Datasets/GDP.PCAP.csv")
+demog_data = read.csv("Datasets/UNdata_secondary_enrollment.csv")
+gdpmeta_data = read.csv("Datasets/Metadata_Country_API_NY.GDP.PCAP.CD_DS2_en_csv_v2_9803.csv")
+```
+
+# Final Project
+
+
+### Introductory Analysis
+```{r}
+# Selecting only X2000-X2005 from the GDP data
+gdp_data = gdp_data %>% select(1:2, 44:50)
+# Renaming the columns
+colnames(gdp_data) = c("CountryName", "CountryCode", "1999","2000", "2001", "2002", "2003", "2004", "2005")
+print(sum(is.na(gdp_data)))
+
+# Printing num.na in each column:
+print(colSums(is.na(gdp_data)))
+head(gdp_data)
+```
+
+
+```{r}
+tail(demog_data, 15)
+## Dropping the last 6 rows
+demog_data = demog_data[1:2338,]
+
+## Changing values of '-' to 0
+demog_data = demog_data %>% mutate_all(funs(ifelse(. == "-", 0, .)))
+
+demog_data$Value = as.numeric(demog_data$Value)
+print(colSums(is.na(demog_data)))
+
+print(summary(demog_data))
+
+demog_data = demog_data %>% select(-Value.Footnotes)
+
+# spreading demog data by Year
+demog_data = demog_data %>% spread(key = Year, value = Value)
+print(sum(is.na(demog_data)))
+head(demog_data)
+
+
+for (i in 1:6) {
+  demog_data$`1999` = ifelse(is.na(demog_data$`1999`), demog_data$`2000`, demog_data$`1999`)
+  demog_data$`2000` = ifelse(is.na(demog_data$`2000`), demog_data$`2001`, demog_data$`2000`)
+  demog_data$`2001` = ifelse(is.na(demog_data$`2001`), demog_data$`2002`, demog_data$`2001`)
+  demog_data$`2002` = ifelse(is.na(demog_data$`2002`), demog_data$`2003`, demog_data$`2002`)
+  demog_data$`2003` = ifelse(is.na(demog_data$`2003`), demog_data$`2004`, demog_data$`2003`)
+  demog_data$`2004` = ifelse(is.na(demog_data$`2004`), demog_data$`2005`, demog_data$`2004`)
+
+  demog_data$`2005` = ifelse(is.na(demog_data$`2005`), demog_data$`2004`, demog_data$`2005`)
+  demog_data$`2004` = ifelse(is.na(demog_data$`2004`), demog_data$`2003`, demog_data$`2004`)
+  demog_data$`2003` = ifelse(is.na(demog_data$`2003`), demog_data$`2002`, demog_data$`2003`)
+  demog_data$`2002` = ifelse(is.na(demog_data$`2002`), demog_data$`2001`, demog_data$`2002`)
+  demog_data$`2001` = ifelse(is.na(demog_data$`2001`), demog_data$`2000`, demog_data$`2001`)
+  demog_data$`2000` = ifelse(is.na(demog_data$`2000`), demog_data$`1999`, demog_data$`2000`)
+
+}
+
+
+## Printing cols where all year values are NA
+print(sum(is.na(demog_data)))
+demog_data = demog_data %>% select(-Unit)
+
+```
+
+
+```{r}
+print(summary(gdpmeta_data))
+
+print(colSums(is.na(gdpmeta_data)))
+
+gdpmeta_data$Region = ifelse(gdpmeta_data$Region == "", "Other", gdpmeta_data$Region)
+gdpmeta_data$IncomeGroup = ifelse(gdpmeta_data$IncomeGroup == "", "Other", gdpmeta_data$IncomeGroup)
+
+## Renaming Country Code
+colnames(gdpmeta_data)[1] = "CountryCode"
+```
+
+```{r}
+## Merging gdp and gdpmeta datasets
+gdp_data = merge(gdp_data, gdpmeta_data, by = "CountryCode")
+
+summary(gdp_data)
+```
+
+##### Our Question
+Our question will be: How did income level affect ratio of women to men who enroll in secondary education from 1999-2005? We will answer this question using GDP and demographic data, looking at the general change, change by region, change by income group of a country, and change by large country. The hypothesis is that higher income countries will have a higher ratio of women to men who enroll in secondary education. The data we will be looking at is from the world bank (income) and UN data (enrollment in secondary education).
+
+ 
+```{r}
+demog_data_long <- demog_data %>% 
+  pivot_longer(cols = c(4:10), names_to = "Year", values_to = "Enrollment")
+
+demog_data_long$iso3c <- countrycode(demog_data_long$Country.or.Area, origin = "country.name", destination = "iso3c")
+
+demog_data_long <- demog_data_long %>% 
+  inner_join(gdp_data, by = c("iso3c" = "CountryCode")) %>% 
+  rename("CountryCode" = iso3c) %>% 
+  relocate(CountryCode, .before = 1)
+
+demog_data_long <- demog_data_long %>% 
+  mutate(Income_Low_High = case_when(IncomeGroup %in% c("Low income", "Lower middle income") ~ "Lower income",
+                                     IncomeGroup %in% c("High income", "Upper middle income") ~ "Upper income",
+                                     TRUE ~ NA))
+
+
+```
+```{r}
+
+demog_data_long %>% 
+  group_by(Subgroup, Year, Income_Low_High) %>% 
+  summarize(Average_Enrollment = mean(Enrollment, na.rm = TRUE)) %>% 
+  mutate(Group = paste(Subgroup, Income_Low_High, sep = " ")) %>%  # Combine variables into a single grouping
+  filter(Income_Low_High != "Other") %>% 
+  ggplot(aes(x = Year, y = Average_Enrollment, fill = Group)) +
+  geom_col(position = position_dodge2(padding = 0.2), alpha = 0.7) +
+  geom_line(aes(color = Group, group = Group), size = 0.7, show.legend = FALSE) + 
+  labs(title = "How does a country's income level affect the enrollment rates of \nmen and women between from 1999 to 2005?",
+       subtitle = "Average global enrollment over time by gender and income level",
+       x = "Year",
+       y = "Average Enrollment",
+       fill = "Gender and Income Level",
+       caption = "Source: UN Data enrollment in secondary education") +
+  scale_y_continuous(
+    expand = c(0, 0),  # Removes extra space at the bottom
+    limits = c(0, 1600000),  # Manually set upper limit to a higher value (adjust this value if needed)
+    breaks = seq(0, 2000000, by = 200000)  # Set the breaks according to your desired range
+  ) +  
+  scale_fill_manual(values = c("Female Lower income" = "lightpink", 
+                               "Female Upper income" = "magenta", 
+                               "Male Lower income" = "lightblue", 
+                               "Male Upper income" = "blue")) + 
+  scale_color_manual(values = c("Female Lower income" = "lightpink", 
+                               "Female Upper income" = "magenta", 
+                               "Male Lower income" = "lightblue", 
+                               "Male Upper income" = "blue")) +
+  theme_bw() +
+  theme(plot.margin = unit(c(0, 0, 0, 0), "cm"))  # Adjust margins to minimize space around the plot
+
+
+
+```
