@@ -17,9 +17,9 @@ library(dplyr)
 
 
 ```{r data}
-gdp_data = read.csv("API_NY.GDP.PCAP.CD_DS2_en_csv_v2_9803.csv")
-demog_data = read.csv("UNdata_Export_20241103_204254970.csv")
-gdpmeta_data = read.csv("Metadata_Country_API_NY.GDP.PCAP.CD_DS2_en_csv_v2_9803.csv")
+gdp_data = read.csv("Datasets/GDP.PCAP.csv")
+demog_data = read.csv("Datasets/UNdata_secondary_enrollment.csv")
+gdpmeta_data = read.csv("Datasets/Metadata_Country_API_NY.GDP.PCAP.CD_DS2_en_csv_v2_9803.csv")
 ```
 
 # Final Project

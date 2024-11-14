@@ -19,9 +19,9 @@ library(readr)
 
 
 ```{r data}
-gdp_data = read.csv("API_NY.GDP.PCAP.CD_DS2_en_csv_v2_9803.csv", skip = 3)
-demog_data = read.csv("UNdata_Export_20241109_205550357.csv")
-gdpmeta_data = read.csv("Metadata_Country_API_NY.GDP.PCAP.CD_DS2_en_csv_v2_9803.csv")
+gdp_data = read.csv("Datasets/GDP.PCAP.csv")
+demog_data = read.csv("Datasets/UNdata_secondary_enrollment.csv")
+gdpmeta_data = read.csv("Datasets/Metadata_Country_API_NY.GDP.PCAP.CD_DS2_en_csv_v2_9803.csv")
 ```
 
 # Final Project
@@ -129,7 +129,9 @@ average_gdp_by_region_year <- gdp_long %>%
 ggplot(average_gdp_by_region_year, aes(x = Year, y = Average_GDP, color = Region)) +
   geom_line() +
   geom_point() +
-  labs(title = "Average GDP Per Capita by Region Over Time", x = "Year", y = "Average GDP") 
+  scale_x_continuous(breaks = seq(1999, 2005, 1)) +
+  scale_y_continuous(breaks = seq(0, 60000, 10000), limits = c(0, 60000)) +
+  labs(title = "Average GDP Per Capita by Region Over Time", x = "Year", y = "Average GDP ($)")
 ```
 ```{r}
 library(scales)  # For formatting y-axis
@@ -142,7 +144,8 @@ demog_long <- demog_data %>%
 
 # Merge with region data from gdp_data
 demog_data_with_region <- merge(demog_long, gdp_data[, c("CountryName", "Region")], 
-                                by.x = "Country.or.Area", by.y = "CountryName", all.x = TRUE)
+                                by.x = "Country.or.Area", by.y = "CountryName", all.x = TRUE) %>% 
+  filter(!is.na(Region))
 
 # Convert 'Year' to numeric
 demog_data_with_region$Year <- as.numeric(demog_data_with_region$Year)
@@ -162,7 +165,9 @@ demog_growth <- demog_mean_values %>%
 ggplot(demog_growth, aes(x = Year, y = Growth, color = Region)) +
   geom_line() +
   geom_point() +
-  labs(title = "Growth in Secondary Education Enrollment by Region", x = "Year", y = "Enrollment Growth (%)") 
+  labs(title = "Growth in Secondary Education Enrollment by Region", x = "Year", y = "Enrollment Growth (%)") +
+  scale_y_continuous(breaks = seq(-10, 50, 10), limits = c(-10, 50)) +
+  scale_x_continuous(breaks = seq(1999, 2005, 1))
 ```
 
 
