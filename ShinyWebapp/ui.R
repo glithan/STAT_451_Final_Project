@@ -17,10 +17,18 @@ fluidPage(
         "plotChoice",
         "Choose a Plot",
         choices = c("GDP" = "gdp", "Growth" = "growth")
+      ), conditionalPanel(
+        condition = "input.plotChoice === 'growth'",
+        selectInput(
+          "demoChoice",
+          "Group by Region or Gender?",
+          choices = c("Region" = "reg", "Gender" = "gender")
+        )
       )
     ),
     mainPanel(
       plotOutput("chosenPlot")
     )
   )
+  
 )
