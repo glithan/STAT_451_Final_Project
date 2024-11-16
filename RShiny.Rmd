@@ -1,0 +1,224 @@
+---
+title: "Final Project Data Visuals (Ethan)"
+author: "Eliot Ozaki, Glit Hanpanitkitkan, Ethan Kawahara, Andrew Sousa"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libs}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(readr)
+library(fastmap)
+library(shiny)
+library(htmltools)
+```
+```{r}
+runExample("08_html")
+```
+
+
+```{r data}
+gdp_data = read.csv("C:\\Users\\pvaso\\Downloads\\GDP.PCAP (1).csv", skip = 3)
+demog_data = read.csv("C:\\Users\\pvaso\\Downloads\\UNdata_secondary_enrollment.csv")
+gdpmeta_data = read.csv("C:\\Users\\pvaso\\Downloads\\Metadata_Country_API_NY.GDP.PCAP.CD_DS2_en_csv_v2_9803.csv")
+```
+
+# Final Project
+
+
+### Introductory Analysis
+```{r}
+# Selecting only X2000-X2005 from the GDP data
+gdp_data = gdp_data %>% select(1:2, 44:50)
+# Renaming the columns
+colnames(gdp_data) = c("CountryName", "CountryCode", "1999","2000", "2001", "2002", "2003", "2004", "2005")
+print(sum(is.na(gdp_data)))
+
+# Printing num.na in each column:
+print(colSums(is.na(gdp_data)))
+head(gdp_data)
+```
+
+
+```{r}
+tail(demog_data, 15)
+## Dropping the last 6 rows
+demog_data = demog_data[1:2338,]
+
+## Changing values of '-' to 0
+demog_data = demog_data %>% mutate_all(funs(ifelse(. == "-", 0, .)))
+
+demog_data$Value = as.numeric(demog_data$Value)
+print(colSums(is.na(demog_data)))
+
+print(summary(demog_data))
+
+demog_data = demog_data %>% select(-Value.Footnotes)
+
+# spreading demog data by Year
+demog_data = demog_data %>% spread(key = Year, value = Value)
+print(sum(is.na(demog_data)))
+head(demog_data)
+
+
+for (i in 1:6) {
+  demog_data$`1999` = ifelse(is.na(demog_data$`1999`), demog_data$`2000`, demog_data$`1999`)
+  demog_data$`2000` = ifelse(is.na(demog_data$`2000`), demog_data$`2001`, demog_data$`2000`)
+  demog_data$`2001` = ifelse(is.na(demog_data$`2001`), demog_data$`2002`, demog_data$`2001`)
+  demog_data$`2002` = ifelse(is.na(demog_data$`2002`), demog_data$`2003`, demog_data$`2002`)
+  demog_data$`2003` = ifelse(is.na(demog_data$`2003`), demog_data$`2004`, demog_data$`2003`)
+  demog_data$`2004` = ifelse(is.na(demog_data$`2004`), demog_data$`2005`, demog_data$`2004`)
+
+  demog_data$`2005` = ifelse(is.na(demog_data$`2005`), demog_data$`2004`, demog_data$`2005`)
+  demog_data$`2004` = ifelse(is.na(demog_data$`2004`), demog_data$`2003`, demog_data$`2004`)
+  demog_data$`2003` = ifelse(is.na(demog_data$`2003`), demog_data$`2002`, demog_data$`2003`)
+  demog_data$`2002` = ifelse(is.na(demog_data$`2002`), demog_data$`2001`, demog_data$`2002`)
+  demog_data$`2001` = ifelse(is.na(demog_data$`2001`), demog_data$`2000`, demog_data$`2001`)
+  demog_data$`2000` = ifelse(is.na(demog_data$`2000`), demog_data$`1999`, demog_data$`2000`)
+
+}
+
+
+## Printing cols where all year values are NA
+print(sum(is.na(demog_data)))
+demog_data = demog_data %>% select(-Unit)
+
+```
+
+
+```{r}
+print(summary(gdpmeta_data))
+
+print(colSums(is.na(gdpmeta_data)))
+
+gdpmeta_data$Region = ifelse(gdpmeta_data$Region == "", "Other", gdpmeta_data$Region)
+gdpmeta_data$IncomeGroup = ifelse(gdpmeta_data$IncomeGroup == "", "Other", gdpmeta_data$IncomeGroup)
+
+## Renaming Country Code
+colnames(gdpmeta_data)[1] = "CountryCode"
+```
+
+```{r}
+## Merging gdp and gdpmeta datasets
+gdp_data = merge(gdp_data, gdpmeta_data, by = "CountryCode")
+
+summary(gdp_data)
+```
+
+##### Our Question
+Our question will be: How did income level affect ratio of women to men who enroll in secondary education from 1999-2005? We will answer this question using GDP and demographic data, looking at the general change, change by region, change by income group of a country, and change by large country. The hypothesis is that higher income countries will have a higher ratio of women to men who enroll in secondary education. The data we will be looking at is from the world bank (income) and UN data (enrollment in secondary education).
+
+
+```{r}
+gdp_long <- gdp_data %>%
+  pivot_longer(cols = starts_with("19") | starts_with("20"), 
+               names_to = "Year", 
+               values_to = "GDP") %>%
+  filter(!is.na(Region) & Region != "World")
+
+# Convert 'Year' to numeric
+gdp_long$Year <- as.numeric(gdp_long$Year)
+
+# Calculate the average GDP for each region by year
+average_gdp_by_region_year <- gdp_long %>%
+  group_by(Region, Year) %>%
+  summarize(Average_GDP = mean(GDP, na.rm = TRUE))
+
+# Create the line plot
+ggplot(average_gdp_by_region_year, aes(x = Year, y = Average_GDP, color = Region)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Average GDP Per Capita by Region Over Time", x = "Year", y = "Average GDP") 
+```
+```{r}
+library(scales)  # For formatting y-axis
+
+demog_long <- demog_data %>%
+  pivot_longer(cols = starts_with("19") | starts_with("20"), 
+               names_to = "Year", 
+               values_to = "Value") %>%
+  filter(!is.na(Value))  # Remove rows with NA values if needed
+
+# Merge with region data from gdp_data
+demog_data_with_region <- merge(demog_long, gdp_data[, c("CountryName", "Region")], 
+                                by.x = "Country.or.Area", by.y = "CountryName", all.x = TRUE)
+
+# Convert 'Year' to numeric
+demog_data_with_region$Year <- as.numeric(demog_data_with_region$Year)
+
+# Calculate mean value per region and year
+demog_mean_values <- demog_data_with_region %>%
+  group_by(Region, Year) %>%
+  summarize(Mean_Value = mean(Value, na.rm = TRUE), .groups = 'drop') %>%
+  arrange(Region, Year)  # Sort by region and year
+
+# Calculate growth relative to the first year in each region
+demog_growth <- demog_mean_values %>%
+  group_by(Region) %>%
+  mutate(Growth = ((Mean_Value / first(Mean_Value)) * 100) - 100)  # Standardize to the first year
+
+# Plot the growth
+growth <- ggplot(demog_growth, aes(x = Year, y = Growth, color = Region)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Growth in Secondary Education Enrollment by Region", x = "Year", y = "Enrollment Growth (%)") 
+```
+```{r}
+growth
+```
+
+```{r}
+ui <- fluidPage(
+  titlePanel("Plot #1"),
+  sidebarLayout(
+    sidebarPanel(
+    ),
+    mainPanel(
+      plotOutput("Plot")
+    )
+  )
+)
+
+server <- function(input, output){
+  output$myPlot <- renderPlot({
+    growth
+  })
+}
+
+shinyApp(ui, server)
+```
+
+```{r}
+growth <- ggplot(mtcars, aes(x = wt, y = mpg)) +
+  geom_point(color = "blue") +
+  labs(title = "Growth Plot", x = "Weight", y = "Miles per Gallon")
+
+# Define UI
+ui <- fluidPage(
+  titlePanel("Plot #1"),
+  sidebarLayout(
+    sidebarPanel(),
+    mainPanel(
+      plotOutput("myPlot")  # Match the output ID
+    )
+  )
+)
+
+# Define Server
+server <- function(input, output) {
+  output$myPlot <- renderPlot({
+    growth  # Directly return the ggplot object
+  })
+}
+
+# Run the app
+shinyApp(ui = ui, server = server)
+```
+
+
