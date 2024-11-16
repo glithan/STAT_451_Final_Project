@@ -22,15 +22,15 @@ library(countrycode)
 # Define server logic required to draw a histogram
 function(input, output){
   # Load the data
-  x = getURL("https://github.com/glithan/STAT_451_Final_Project/tree/main/Datasets/gdp_data.csv")
+  x = getURL("https://raw.githubusercontent.com/glithan/STAT_451_Final_Project/refs/heads/main/Datasets/gdp_data.csv")
   gdp_data = read.csv(text = x)
-  x = getURL("https://github.com/glithan/STAT_451_Final_Project/tree/main/Datasets/demog_data_with_region.csv")
+  x = getURL("https://raw.githubusercontent.com/glithan/STAT_451_Final_Project/refs/heads/main/Datasets/demog_data_with_region.csv")
   demog_data_with_region = read.csv(text = x)
   
-  print(summary(demog_data_with_region))
-  
+  colnames(gdp_data)[3:9] <- sub("^X", "", colnames(gdp_data)[3:9])
+    
   gdp_long <- gdp_data %>%
-    pivot_longer(cols = colnames(gdp_data) %>% select(starts_with("19") | starts_with("20")),
+    pivot_longer(cols = starts_with("19") | starts_with("x20"),
                  names_to = "Year", 
                  values_to = "GDP") %>%
     filter(!is.na(Region) & Region != "World")

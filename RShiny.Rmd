@@ -167,6 +167,8 @@ gdp <- ggplot(average_gdp_by_region_year, aes(x = Year, y = Average_GDP, color =
 ```
 ```{r}
 library(scales)  # For formatting y-axis
+#
+#write.csv(demog_data, "Datasets/demog_data.csv", row.names = FALSE)
 
 demog_long <- demog_data %>%
   pivot_longer(cols = starts_with("19") | starts_with("20"), 
