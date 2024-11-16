@@ -26,11 +26,15 @@ function(input, output){
   gdp_data = read.csv(text = x)
   x = getURL("https://raw.githubusercontent.com/glithan/STAT_451_Final_Project/refs/heads/main/Datasets/demog_data_with_region.csv")
   demog_data_with_region = read.csv(text = x)
+  x = getURL("https://raw.githubusercontent.com/glithan/STAT_451_Final_Project/refs/heads/main/Datasets/demog_data.csv")
+  demog_data = read.csv(text = x)
+  
   
   colnames(gdp_data)[3:9] <- sub("^X", "", colnames(gdp_data)[3:9])
+  colnames(demog_data)[4:10] <- sub("^X", "", colnames(demog_data)[4:10])
     
   gdp_long <- gdp_data %>%
-    pivot_longer(cols = starts_with("19") | starts_with("x20"),
+    pivot_longer(cols = starts_with("19") | starts_with("20"),
                  names_to = "Year", 
                  values_to = "GDP") %>%
     filter(!is.na(Region) & Region != "World")
@@ -60,7 +64,7 @@ function(input, output){
         geom_point() +
         labs(title = "Average GDP Per Capita by Region Over Time", x = "Year", y = "Average GDP") 
     } else if(input$plotChoice == "growth"){
-      growth <- ggplot(demog_growth, aes(x = Year, y = Growth, color = Region)) +
+      ggplot(demog_growth, aes(x = Year, y = Growth, color = Region)) +
         geom_line() +
         geom_point() +
         labs(title = "Growth in Secondary Education Enrollment by Region", x = "Year", y = "Enrollment Growth (%)")
