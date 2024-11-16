@@ -23,12 +23,14 @@ library(countrycode)
 
 
 ```{r data}
-gdp_data = read.csv("C:\\Users\\pvaso\\Downloads\\GDP.PCAP (1).csv", skip = 3)
-gdp_data2 = read.csv("C:\\Users\\pvaso\\Downloads\\GDP.PCAP (1).csv", skip = 3)
-demog_data = read.csv("C:\\Users\\pvaso\\Downloads\\UNdata_secondary_enrollment.csv")
-demog_data2 = read.csv("C:\\Users\\pvaso\\Downloads\\UNdata_secondary_enrollment.csv")
-gdpmeta_data = read.csv("C:\\Users\\pvaso\\Downloads\\Metadata_Country_API_NY.GDP.PCAP.CD_DS2_en_csv_v2_9803.csv")
-gdpmeta_data2 = read.csv("C:\\Users\\pvaso\\Downloads\\Metadata_Country_API_NY.GDP.PCAP.CD_DS2_en_csv_v2_9803.csv")
+
+
+gdp_data = read.csv("Datasets/GDP.PCAP.csv", skip = 3)
+gdp_data2 = read.csv("Datasets/GDP.PCAP.csv", skip = 3)
+demog_data = read.csv("Datasets/UNdata_secondary_enrollment.csv")
+demog_data2 = read.csv("Datasets/UNdata_secondary_enrollment.csv")
+gdpmeta_data = read.csv("Datasets/Metadata_Country_API_NY.GDP.PCAP.CD_DS2_en_csv_v2_9803.csv")
+gdpmeta_data2 = read.csv("Datasets/Metadata_Country_API_NY.GDP.PCAP.CD_DS2_en_csv_v2_9803.csv")
 ```
 
 # Final Project
@@ -45,6 +47,28 @@ print(sum(is.na(gdp_data)))
 # Printing num.na in each column:
 print(colSums(is.na(gdp_data)))
 head(gdp_data)
+
+for (i in 1:6) {
+  gdp_data$`2005` = ifelse(is.na(gdp_data$`2005`), gdp_data$`2004`, gdp_data$`2005`)
+  gdp_data$`2004` = ifelse(is.na(gdp_data$`2004`), gdp_data$`2003`, gdp_data$`2004`)
+  gdp_data$`2003` = ifelse(is.na(gdp_data$`2003`), gdp_data$`2002`, gdp_data$`2003`)
+  gdp_data$`2002` = ifelse(is.na(gdp_data$`2002`), gdp_data$`2001`, gdp_data$`2002`)
+  gdp_data$`2001` = ifelse(is.na(gdp_data$`2001`), gdp_data$`2000`, gdp_data$`2001`)
+  gdp_data$`2000` = ifelse(is.na(gdp_data$`2000`), gdp_data$`1999`, gdp_data$`2000`)
+  
+  gdp_data$`1999` = ifelse(is.na(gdp_data$`1999`), gdp_data$`2000`, gdp_data$`1999`)
+  gdp_data$`2000` = ifelse(is.na(gdp_data$`2000`), gdp_data$`2001`, gdp_data$`2000`)
+  gdp_data$`2001` = ifelse(is.na(gdp_data$`2001`), gdp_data$`2002`, gdp_data$`2001`)
+  gdp_data$`2002` = ifelse(is.na(gdp_data$`2002`), gdp_data$`2003`, gdp_data$`2002`)
+  gdp_data$`2003` = ifelse(is.na(gdp_data$`2003`), gdp_data$`2004`, gdp_data$`2003`)
+  gdp_data$`2004` = ifelse(is.na(gdp_data$`2004`), gdp_data$`2005`, gdp_data$`2004`)
+}
+
+for (col in 3:9) {
+  if (any(is.na(gdp_data[,col]))) {
+    gdp_data[,col] = ifelse(is.na(gdp_data[,col]), mean(gdp_data[,col], na.rm = TRUE), gdp_data[,col])
+  }
+}
 ```
 
 
@@ -110,6 +134,9 @@ colnames(gdpmeta_data)[1] = "CountryCode"
 ## Merging gdp and gdpmeta datasets
 gdp_data = merge(gdp_data, gdpmeta_data, by = "CountryCode")
 
+#write.csv(gdp_data, "Datasets/gdp_data.csv", row.names = FALSE)
+
+
 summary(gdp_data)
 ```
 
@@ -153,6 +180,8 @@ demog_data_with_region <- merge(demog_long, gdp_data[, c("CountryName", "Region"
 
 # Convert 'Year' to numeric
 demog_data_with_region$Year <- as.numeric(demog_data_with_region$Year)
+
+#write.csv(demog_data_with_region, "Datasets/demog_data_with_region.csv", row.names = FALSE)
 
 # Calculate mean value per region and year
 demog_mean_values <- demog_data_with_region %>%
