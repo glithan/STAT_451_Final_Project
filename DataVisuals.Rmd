@@ -142,10 +142,23 @@ demog_long <- demog_data %>%
                values_to = "Value") %>%
   filter(!is.na(Value))  # Remove rows with NA values if needed
 
+demog_long <- demog_long %>% 
+  mutate(Countrycode = countrycode(demog_long$Country.or.Area, origin = "country.name", destination = "iso3c")) %>% 
+  mutate(Countrycode = case_when(Country.or.Area == "Serbia and Montenegro" ~ "SCG",
+                                 Country.or.Area == "Netherlands Antilles" ~ "ANT",
+                                 TRUE ~ Countrycode))
+
 # Merge with region data from gdp_data
-demog_data_with_region <- merge(demog_long, gdp_data[, c("CountryName", "Region")], 
-                                by.x = "Country.or.Area", by.y = "CountryName", all.x = TRUE) %>% 
-  filter(!is.na(Region))
+demog_data_with_region <- merge(demog_long, gdp_data[, c("CountryCode", "Region")], 
+                                by.x = "Countrycode", by.y = "CountryCode", all.x = TRUE) %>% 
+  mutate(Region = case_when(Countrycode == "AIA" ~ "Latin America & Caribbean",
+                            Countrycode == "ANT" ~ "Europe & Central Asia",
+                            Countrycode == "COK" ~ "East Asia & Pacific",
+                            Countrycode == "MSR" ~ "Latin America & Caribbean",
+                            Countrycode == "NIU" ~ "East Asia & Pacific",
+                            Countrycode == "SCG" ~ "Europe & Central Asia",
+                            Countrycode == "TKL" ~ "East Asia & Pacific",
+                            TRUE ~ Region))
 
 # Convert 'Year' to numeric
 demog_data_with_region$Year <- as.numeric(demog_data_with_region$Year)
