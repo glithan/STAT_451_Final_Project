@@ -11,24 +11,71 @@ library(shiny)
 
 fluidPage(
   titlePanel("Choose a Plot"),
-  sidebarLayout(
-    sidebarPanel(
-      selectInput(
-        "plotChoice",
-        "Choose a Plot",
-        choices = c("GDP" = "gdp", "Growth" = "growth")
-      ), conditionalPanel(
-        condition = "input.plotChoice === 'growth'",
-        selectInput(
-          "demoChoice",
-          "Group by Region or Gender?",
-          choices = c("Region" = "reg", "Gender" = "gender")
+  
+  # Main Tabset Panel
+  tabsetPanel(
+    # First Tab: Plots
+    tabPanel(
+      "Plots",
+      sidebarLayout(
+        sidebarPanel(
+          selectInput(
+            "plotChoice",
+            "Choose a Plot",
+            choices = c("GDP" = "gdp", "Growth" = "growth")
+          ), 
+          conditionalPanel(
+            condition = "input.plotChoice === 'growth'",
+            selectInput(
+              "demoChoice",
+              "Group by Region or Gender?",
+              choices = c("Region" = "reg", "Gender" = "gender")
+            )
+          ), 
+          conditionalPanel(
+            condition = "input.plotChoice == 'gdp'",
+            selectInput(
+              "selectRegions",
+              "Select Region(s): ",
+              choices = c(
+                "East Asia & Pacific", "Europe & Central Asia", 
+                "Latin America & Caribbean", "Middle East & North Africa", 
+                "North America", "Other", "South Asia", "Sub-Saharan Africa"
+              ),
+              selected = c("East Asia & Pacific", "North America"), 
+              multiple = TRUE
+            ),
+            sliderInput(
+              "yearRange",
+              "Select Year Range",
+              min = 1999, max = 2005, value = c(1999, 2005), step = 1, sep = ""
+            )
+          )
+        ),
+        mainPanel(
+          plotOutput("chosenPlot")
         )
       )
     ),
-    mainPanel(
-      plotOutput("chosenPlot")
+    # Second Tab: Data Tables
+    tabPanel(
+      "Datasets",
+      sidebarLayout(
+        sidebarPanel(
+          selectInput(
+            "dataChoice",
+            "Choose a Dataset:",
+            choices = c(
+              "GDP Data" = "gdp", 
+              "Demographic Data" = "demog", 
+              "Demographic Data (With Region)" = "demog_region"
+            )
+          )
+        ),
+        mainPanel(
+          dataTableOutput("chosenTable")
+        )
+      )
     )
   )
-  
 )
