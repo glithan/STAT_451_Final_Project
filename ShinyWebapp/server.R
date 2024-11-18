@@ -77,6 +77,14 @@ function(input, output){
       average_gdp_region_year <- average_gdp_by_region_year %>% 
         filter((Year >= min(input$yearRange)) & (Year <= max(input$yearRange))) %>% 
         filter(Region %in% input$selectRegions) 
+      # Calculate gdp change by region
+      gdp_change <- average_gdp_region_year %>%
+        group_by(Region) %>%
+        summarize(Change = last(Average_GDP) - first(Average_GDP), .groups = "drop")
+      # Reorder region factor based on GDP change
+      average_gdp_region_year <- average_gdp_region_year %>%
+        mutate(Region = factor(Region, levels = gdp_change$Region[order(gdp_change$Change, decreasing = TRUE)]))
+      
       custom_colors <- c(
         "East Asia & Pacific" = "#CC79A7",
         "Europe & Central Asia" = "#648fff",
@@ -103,6 +111,14 @@ function(input, output){
     } 
     else if(input$plotChoice == "growth"){
       if (input$demoChoice == 'reg'){
+        # Calculate enrollment change for regions
+        region_enrollment_change <- demog_growth %>%
+          group_by(Region) %>%
+          summarize(Change = last(Growth) - first(Growth), .groups = "drop")
+        # Reorder the Region factor based on enrollment change
+        demog_growth <- demog_growth %>%
+          mutate(Region = factor(Region, levels = region_enrollment_change$Region[order(region_enrollment_change$Change, decreasing = TRUE)]))
+        
         ggplot(demog_growth, aes(x = Year, y = Growth, color = Region)) +
           geom_line() +
           geom_point() +
@@ -110,10 +126,18 @@ function(input, output){
           scale_y_continuous(breaks = seq(-100, 100, 5)) +
           scale_x_continuous(breaks = seq(1999, 2005, 2))
       } else {
+        # Calculate enrollment change for gender
+        gender_enrollment_change <- demog_growth_gender %>%
+          group_by(Subgroup) %>%
+          summarize(Change = last(Growth) - first(Growth), .groups = "drop")
+        
+        # Reorder the Subgroup factor based on enrollment change
+        demog_growth_gender <- demog_growth_gender %>%
+          mutate(Subgroup = factor(Subgroup, levels = gender_enrollment_change$Subgroup[order(gender_enrollment_change$Change, decreasing = TRUE)]))
         ggplot(demog_growth_gender, aes(x = Year, y = Growth, color = Subgroup)) +
           geom_line() +
           geom_point() +
-          labs(title = "Growth in Secondary Education Enrollment by Region", x = "Year", y = "Enrollment Growth (%)") + 
+          labs(title = "Growth in Secondary Education Enrollment by Gender", x = "Year", y = "Enrollment Growth (%)") + 
           scale_y_continuous(breaks = seq(-100, 100, 5)) +
           scale_x_continuous(breaks = seq(1999, 2005, 2))
         
