@@ -18,6 +18,7 @@ library(htmltools)
 library(tidyselect)
 library(scales)
 library(countrycode)
+library(DT)
 
 # Define server logic required to draw a histogram
 function(input, output){
@@ -30,7 +31,7 @@ function(input, output){
   demog_data = read.csv(text = x)
   
   
-  colnames(gdp_data)[3:9] <- sub("^X", "", colnames(gdp_data)[3:9])
+  colnames(gdp_data)[3:10] <- sub("^X", "", colnames(gdp_data)[3:10])
   colnames(demog_data)[4:10] <- sub("^X", "", colnames(demog_data)[4:10])
     
   gdp_long <- gdp_data %>%
@@ -73,15 +74,34 @@ function(input, output){
   
   output$chosenPlot <- renderPlot({
     if(input$plotChoice == "gdp"){
-      ggplot(average_gdp_by_region_year, aes(x = Year, y = Average_GDP, color = Region)) +
+      average_gdp_region_year <- average_gdp_by_region_year %>% 
+        filter((Year >= min(input$yearRange)) & (Year <= max(input$yearRange))) %>% 
+        filter(Region %in% input$selectRegions) 
+      custom_colors <- c(
+        "East Asia & Pacific" = "#CC79A7",
+        "Europe & Central Asia" = "#648fff",
+        "Latin America & Caribbean" = "#D55E00",
+        "Middle East & North Africa" = "#F0E442",
+        "North America" = "#009E73",
+        "Other" = "#56B4E9",
+        "South Asia" = "#E69F00",
+        "Sub-Saharan Africa" = "#7f7f7f"
+      )
+        ggplot(average_gdp_region_year, aes(x = Year, y = Average_GDP, color = Region)) +
         geom_line() +
         geom_point() +
         labs(title = "Average GDP Per Capita by Region Over Time", x = "Year", y = "Average GDP Per Capita (USD)") +
-        scale_y_continuous(breaks = seq(0,60000, 5000), labels = scales::dollar_format()) +
-        scale_x_continuous(breaks = seq(1999, 2005, 2))
+        scale_y_continuous(
+          labels = scales::comma_format(prefix = "$"),
+          limits = c(0, max(average_gdp_region_year$Average_GDP) * 1.2),
+          breaks = scales::pretty_breaks(n = 5)  
+        ) +
+        scale_x_continuous(breaks = seq(1999, 2005, 1)) +
+        scale_color_manual(values = custom_colors)
       
       
-    } else if(input$plotChoice == "growth"){
+    } 
+    else if(input$plotChoice == "growth"){
       if (input$demoChoice == 'reg'){
         ggplot(demog_growth, aes(x = Year, y = Growth, color = Region)) +
           geom_line() +
@@ -101,4 +121,20 @@ function(input, output){
       }
       
   })
+  output$chosenTable <- renderDataTable({
+    dataset <- switch(input$dataChoice,
+                      "gdp" = gdp_data,
+                      "demog" = demog_data,
+                      "demog_region" = demog_data_with_region)
+    datatable(
+      dataset,
+      options = list(
+        dom = 'Bfrtip',    # Arrange the table elements
+        pageLength = 10, # Set default rows per page
+        scrollX = TRUE   # Enable horizontal scrolling for wide tables
+      ),
+      filter = "top"
+    )
+  })
+  
 }
