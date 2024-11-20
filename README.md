@@ -14,6 +14,7 @@
 #### GDP per capita: https://data.worldbank.org/indicator/NY.GDP.PCAP.CD
 #### Enrollment in secondary education: https://data.un.org/Data.aspx?d=GenderStat&f=inID%3a64
 #### Population information: https://www.census.gov/data-tools/demo/idb/#/table?COUNTRY_YEAR=2024&COUNTRY_YR_ANIM=2024https:%2F%2Fwww.census.gov%2Fdata-tools%2Fdemo%2Fidb%2F%23%2Ftable%3FCOUNTRY_YEAR%3D2024&menu=tableViz&TABLE_RANGE=1999,2005&TABLE_YEARS=1999,2000,2001,2002,2003,2004,2005,2024&TABLE_USE_RANGE=Y&TABLE_USE_YEARS=Y&TABLE_STEP=1&TABLE_ADD_YEARS=2024
+#### Continents and regions: https://www.kaggle.com/datasets/andradaolteanu/country-mapping-iso-continent-region
 
 ### Initial Data Visualizations
 
