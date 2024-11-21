@@ -99,10 +99,10 @@ function(input, output){
         geom_line() +
         geom_point() +
         labs(title = "Average GDP Per Capita by Region Over Time", x = "Year", y = "Average GDP Per Capita (USD)") +
-        scale_y_continuous(
+        scale_y_log10(
           labels = scales::comma_format(prefix = "$"),
-          limits = c(0, max(average_gdp_region_year$Average_GDP) * 1.2),
-          breaks = scales::pretty_breaks(n = 5)  
+          limits = c(5000, max(average_gdp_region_year$Average_GDP) * 1.2),
+          breaks = scales::log_breaks(n = 5) #Adding the log scale breaks
         ) +
         scale_x_continuous(breaks = seq(1999, 2005, 1)) +
         scale_color_manual(values = custom_colors)
