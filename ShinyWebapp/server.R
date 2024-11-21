@@ -138,7 +138,7 @@ function(input, output){
           geom_line() +
           geom_point() +
           labs(title = "Growth in Secondary Education Enrollment by Gender", x = "Year", y = "Enrollment Growth (%)") + 
-          scale_y_continuous(breaks = seq(-100, 100, 5)) +
+          scale_y_log10(breaks = seq(-100, 100, 5)) +
           scale_x_continuous(breaks = seq(1999, 2005, 2))
         
         }
