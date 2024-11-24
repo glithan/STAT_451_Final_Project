@@ -22,7 +22,7 @@ fluidPage(
           selectInput(
             "plotChoice",
             "Choose a Plot",
-            choices = c("GDP" = "gdp", "Growth" = "growth")
+            choices = c("GDP" = "gdp", "Growth" = "growth", "Gender" = "gender")
           ), 
           conditionalPanel(
             condition = "input.plotChoice === 'growth'",
@@ -40,9 +40,9 @@ fluidPage(
               choices = c(
                 "East Asia & Pacific", "Europe & Central Asia", 
                 "Latin America & Caribbean", "Middle East & North Africa", 
-                "North America", "Other", "South Asia", "Sub-Saharan Africa"
+                "North America", "South Asia", "Sub-Saharan Africa"
               ),
-              selected = c("East Asia & Pacific", "North America"), 
+              selected = c("North America", "Europe & Central Asia"), 
               multiple = TRUE
             ),
             sliderInput(
@@ -50,7 +50,18 @@ fluidPage(
               "Select Year Range",
               min = 1999, max = 2005, value = c(1999, 2005), step = 1, sep = ""
             )
+          ),
+          conditionalPanel(
+            condition = "input.plotChoice == 'gender'",
+            checkboxGroupInput(
+              inputId = "plotType",
+              label = "Choose Plot Type",
+              choices = c("Bar", "Line"),
+              selected = "Bar",
+              
+            ),
           )
+
         ),
         mainPanel(
           plotOutput("chosenPlot")
