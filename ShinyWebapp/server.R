@@ -187,7 +187,6 @@ function(input, output){
           
         }
         
-        
         ## Printing cols where all year values are NA
         demog_data2 = demog_data2 %>% select(-Unit)
         
@@ -216,14 +215,12 @@ function(input, output){
                                              TRUE ~ NA))
         
         
-        demog_data_long2 %>% 
+        plain_plot <- demog_data_long2 %>% 
           group_by(Subgroup, Year, Income_Low_High) %>% 
           summarize(Average_Enrollment = mean(Enrollment, na.rm = TRUE)) %>% 
           mutate(Group = paste(Subgroup, Income_Low_High, sep = " ")) %>%  # Combine variables into a single grouping
           filter(Income_Low_High != "Other") %>% 
           ggplot(aes(x = Year, y = Average_Enrollment, fill = Group)) +
-          geom_col(position = position_dodge2(padding = 0.2), alpha = 0.7) +
-          geom_line(aes(color = Group, group = Group), size = 0.7, show.legend = FALSE) + 
           labs(title = "How does a country's income level affect the enrollment rates of \nmen and women between from 1999 to 2005?",
                subtitle = "Average global enrollment over time by gender and income level",
                x = "Year",
@@ -246,6 +243,17 @@ function(input, output){
           theme_bw() +
           theme(plot.margin = unit(c(0, 0, 0, 0), "cm"))  # Adjust margins to minimize space around the plot
         
+        final_plot <- plain_plot
+        
+        if("Bar" %in% input$plotType) {
+          final_plot <- final_plot + geom_col(position = position_dodge2(padding = 0.2), alpha = 0.7) 
+        }
+        if("Line" %in% input$plotType){
+          final_plot <- final_plot + geom_line(aes(color = Group, group = Group), size = 0.7, show.legend = FALSE) 
+        }
+
+        
+        final_plot
       }    
     })
   output$chosenTable <- renderDataTable({
