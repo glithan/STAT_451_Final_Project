@@ -64,7 +64,7 @@ fluidPage(
 
         ),
         mainPanel(
-          plotOutput("chosenPlot")
+          plotOutput("chosenPlot", height = "1200px", width = "95%")
         )
       )
     ),
