@@ -29,6 +29,12 @@ function(input, output){
   demog_data_with_region = read.csv(text = x)
   x = getURL("https://raw.githubusercontent.com/glithan/STAT_451_Final_Project/refs/heads/main/Datasets/demog_data.csv")
   demog_data = read.csv(text = x)
+  gdp_data2 <- getURL("https://raw.githubusercontent.com/glithan/STAT_451_Final_Project/refs/heads/main/Datasets/GDP.PCAP.csv") 
+  gdp_data2 <- read.csv(text=gdp_data2)
+  demog_data2 <- getURL("https://raw.githubusercontent.com/glithan/STAT_451_Final_Project/refs/heads/main/Datasets/UNdata_secondary_enrollment.csv")
+  demog_data2 <- read.csv(text = demog_data2)
+  gdpmeta_data2 <- getURL("https://raw.githubusercontent.com/glithan/STAT_451_Final_Project/refs/heads/main/Datasets/Metadata_Country_API_NY.GDP.PCAP.CD_DS2_en_csv_v2_9803.csv")
+  gdpmeta_data2 <- read.csv(text = gdpmeta_data2)
   
   
   colnames(gdp_data)[3:10] <- sub("^X", "", colnames(gdp_data)[3:10])
@@ -108,7 +114,7 @@ function(input, output){
         scale_color_manual(values = custom_colors)
       
       
-    } 
+    }  
     else if(input$plotChoice == "growth"){
       if (input$demoChoice == 'reg'){
         # Calculate enrollment change for regions
@@ -142,9 +148,106 @@ function(input, output){
           scale_x_continuous(breaks = seq(1999, 2005, 2))
         
         }
-      }
+    }
+    else if(input$plotChoice == "gender"){
       
-  })
+        # Selecting only X2000-X2005 from the GDP data
+        gdp_data2 = gdp_data2 %>% select(1:2, 44:50)
+        # Renaming the columns
+        colnames(gdp_data2) = c("CountryName", "CountryCode", "1999","2000", "2001", "2002", "2003", "2004", "2005")
+        
+        tail(demog_data2, 15)
+        ## Dropping the last 6 rows
+        demog_data2 = demog_data2[1:2338,]
+        
+        ## Changing values of '-' to 0
+        demog_data2 = demog_data2 %>% mutate_all(funs(ifelse(. == "-", 0, .)))
+        
+        demog_data2$Value = as.numeric(demog_data2$Value)
+        
+        demog_data2 = demog_data2 %>% select(-Value.Footnotes)
+        
+        # spreading demog data by Year
+        demog_data2 = demog_data2 %>% spread(key = Year, value = Value)
+        
+        for (i in 1:6) {
+          demog_data2$`1999` = ifelse(is.na(demog_data2$`1999`), demog_data2$`2000`, demog_data2$`1999`)
+          demog_data2$`2000` = ifelse(is.na(demog_data2$`2000`), demog_data2$`2001`, demog_data2$`2000`)
+          demog_data2$`2001` = ifelse(is.na(demog_data2$`2001`), demog_data2$`2002`, demog_data2$`2001`)
+          demog_data2$`2002` = ifelse(is.na(demog_data2$`2002`), demog_data2$`2003`, demog_data2$`2002`)
+          demog_data2$`2003` = ifelse(is.na(demog_data2$`2003`), demog_data2$`2004`, demog_data2$`2003`)
+          demog_data2$`2004` = ifelse(is.na(demog_data2$`2004`), demog_data2$`2005`, demog_data2$`2004`)
+          
+          demog_data2$`2005` = ifelse(is.na(demog_data2$`2005`), demog_data2$`2004`, demog_data2$`2005`)
+          demog_data2$`2004` = ifelse(is.na(demog_data2$`2004`), demog_data2$`2003`, demog_data2$`2004`)
+          demog_data2$`2003` = ifelse(is.na(demog_data2$`2003`), demog_data2$`2002`, demog_data2$`2003`)
+          demog_data2$`2002` = ifelse(is.na(demog_data2$`2002`), demog_data2$`2001`, demog_data2$`2002`)
+          demog_data2$`2001` = ifelse(is.na(demog_data2$`2001`), demog_data2$`2000`, demog_data2$`2001`)
+          demog_data2$`2000` = ifelse(is.na(demog_data2$`2000`), demog_data2$`1999`, demog_data2$`2000`)
+          
+        }
+        
+        
+        ## Printing cols where all year values are NA
+        demog_data2 = demog_data2 %>% select(-Unit)
+        
+        gdpmeta_data2$Region = ifelse(gdpmeta_data2$Region == "", "Other", gdpmeta_data2$Region)
+        gdpmeta_data2$IncomeGroup = ifelse(gdpmeta_data2$IncomeGroup == "", "Other", gdpmeta_data2$IncomeGroup)
+        
+        ## Renaming Country Code
+        colnames(gdpmeta_data2)[1] = "CountryCode"
+        
+        ## Merging gdp and gdpmeta datasets
+        gdp_data2 = merge(gdp_data2, gdpmeta_data2, by = "CountryCode")
+        
+        demog_data_long2 <- demog_data2 %>% 
+          pivot_longer(cols = c(4:10), names_to = "Year", values_to = "Enrollment")
+        
+        demog_data_long2$iso3c <- countrycode(demog_data_long2$Country.or.Area, origin = "country.name", destination = "iso3c")
+        
+        demog_data_long2 <- demog_data_long2 %>% 
+          inner_join(gdp_data2, by = c("iso3c" = "CountryCode")) %>% 
+          rename("CountryCode" = iso3c) %>% 
+          relocate(CountryCode, .before = 1)
+        
+        demog_data_long2 <- demog_data_long2 %>% 
+          mutate(Income_Low_High = case_when(IncomeGroup %in% c("Low income", "Lower middle income") ~ "Lower income",
+                                             IncomeGroup %in% c("High income", "Upper middle income") ~ "Upper income",
+                                             TRUE ~ NA))
+        
+        
+        demog_data_long2 %>% 
+          group_by(Subgroup, Year, Income_Low_High) %>% 
+          summarize(Average_Enrollment = mean(Enrollment, na.rm = TRUE)) %>% 
+          mutate(Group = paste(Subgroup, Income_Low_High, sep = " ")) %>%  # Combine variables into a single grouping
+          filter(Income_Low_High != "Other") %>% 
+          ggplot(aes(x = Year, y = Average_Enrollment, fill = Group)) +
+          geom_col(position = position_dodge2(padding = 0.2), alpha = 0.7) +
+          geom_line(aes(color = Group, group = Group), size = 0.7, show.legend = FALSE) + 
+          labs(title = "How does a country's income level affect the enrollment rates of \nmen and women between from 1999 to 2005?",
+               subtitle = "Average global enrollment over time by gender and income level",
+               x = "Year",
+               y = "Average Enrollment",
+               fill = "Gender and Income Level",
+               caption = "Source: UN Data enrollment in secondary education") +
+          scale_y_continuous(
+            expand = c(0, 0),  # Removes extra space at the bottom
+            limits = c(0, 1600000),  # Manually set upper limit to a higher value (adjust this value if needed)
+            breaks = seq(0, 2000000, by = 200000)  # Set the breaks according to your desired range
+          ) +  
+          scale_fill_manual(values = c("Female Lower income" = "lightpink", 
+                                       "Female Upper income" = "magenta", 
+                                       "Male Lower income" = "lightblue", 
+                                       "Male Upper income" = "blue")) + 
+          scale_color_manual(values = c("Female Lower income" = "lightpink", 
+                                        "Female Upper income" = "magenta", 
+                                        "Male Lower income" = "lightblue", 
+                                        "Male Upper income" = "blue")) +
+          theme_bw() +
+          theme(plot.margin = unit(c(0, 0, 0, 0), "cm"))  # Adjust margins to minimize space around the plot
+        
+      }    
+    })
   output$chosenTable <- renderDataTable({
     dataset <- switch(input$dataChoice,
                       "gdp" = gdp_data,
