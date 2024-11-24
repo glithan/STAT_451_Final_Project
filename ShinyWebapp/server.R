@@ -111,7 +111,14 @@ function(input, output){
           breaks = scales::pretty_breaks(n = 5)  
         ) +
         scale_x_continuous(breaks = seq(1999, 2005, 1)) +
-        scale_color_manual(values = custom_colors)
+        scale_color_manual(values = custom_colors) +
+        theme(
+          plot.title = element_text(size = 22),
+           axis.text = element_text(size = 15),
+          axis.title = element_text(size = 15),
+          legend.title = element_text(size = 15),
+          legend.text = element_text(size = 15)
+        )
       
       
     }  
@@ -130,7 +137,14 @@ function(input, output){
           geom_point() +
           labs(title = "Growth in Secondary Education Enrollment by Region", x = "Year", y = "Enrollment Growth (%)") +
           scale_y_continuous(breaks = seq(-100, 100, 5)) +
-          scale_x_continuous(breaks = seq(1999, 2005, 2))
+          scale_x_continuous(breaks = seq(1999, 2005, 2)) +
+          theme(
+            plot.title = element_text(size = 22),
+            axis.title = element_text(size = 15),
+            axis.text = element_text(size = 15),
+            legend.title = element_text(size = 18),
+            legend.text = element_text(size = 18)
+          )
       } else {
         # Calculate enrollment change for gender
         gender_enrollment_change <- demog_growth_gender %>%
@@ -140,12 +154,20 @@ function(input, output){
         # Reorder the Subgroup factor based on enrollment change
         demog_growth_gender <- demog_growth_gender %>%
           mutate(Subgroup = factor(Subgroup, levels = gender_enrollment_change$Subgroup[order(gender_enrollment_change$Change, decreasing = TRUE)]))
+        
         ggplot(demog_growth_gender, aes(x = Year, y = Growth, color = Subgroup)) +
           geom_line() +
           geom_point() +
           labs(title = "Growth in Secondary Education Enrollment by Gender", x = "Year", y = "Enrollment Growth (%)") + 
           scale_y_continuous(breaks = seq(-100, 100, 5)) +
-          scale_x_continuous(breaks = seq(1999, 2005, 2))
+          scale_x_continuous(breaks = seq(1999, 2005, 2)) +
+          theme(
+            plot.title = element_text(size = 22),
+            axis.title = element_text(size = 15),
+            axis.text = element_text(size = 15),
+            legend.title = element_text(size = 15),
+            legend.text = element_text(size = 15)
+          )
         
         }
     }
@@ -241,7 +263,14 @@ function(input, output){
                                         "Male Lower income" = "lightblue", 
                                         "Male Upper income" = "blue")) +
           theme_bw() +
-          theme(plot.margin = unit(c(0, 0, 0, 0), "cm"))  # Adjust margins to minimize space around the plot
+          theme(plot.margin = unit(c(0, 0, 0, 0), "cm"),
+          axis.title = element_text(size = 15),
+          axis.text = element_text(size = 15),
+          legend.title = element_text(size = 15),
+          legend.text = element_text(size = 15),
+          plot.title = element_text(size = 22),
+          plot.caption = element_text(size = 13)
+          )
         
         final_plot <- plain_plot
         
