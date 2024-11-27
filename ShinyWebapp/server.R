@@ -19,6 +19,8 @@ library(tidyselect)
 library(scales)
 library(countrycode)
 library(DT)
+library(plotly)
+library(viridis)
 
 # Define server logic required to draw a histogram
 function(input, output){
@@ -35,6 +37,8 @@ function(input, output){
   demog_data2 <- read.csv(text = demog_data2)
   gdpmeta_data2 <- getURL("https://raw.githubusercontent.com/glithan/STAT_451_Final_Project/refs/heads/main/Datasets/Metadata_Country_API_NY.GDP.PCAP.CD_DS2_en_csv_v2_9803.csv")
   gdpmeta_data2 <- read.csv(text = gdpmeta_data2)
+  map_data <- getURL("https://raw.githubusercontent.com/glithan/STAT_451_Final_Project/refs/heads/main/Datasets/map_data.csv")
+  map_data <- read.csv(text = map_data)
   
   
   colnames(gdp_data)[3:10] <- sub("^X", "", colnames(gdp_data)[3:10])
@@ -57,6 +61,9 @@ function(input, output){
   
   # Changing all "NA" regions in demog_data_with_region to "Other":
   demog_data_with_region$Region[is.na(demog_data_with_region$Region)] <- "Other"
+  
+  #Changing all 0 values in demog_data_with_region to NA
+  demog_data_with_region$Value <- na_if(demog_data_with_region$Value, 0)
   
   demog_mean_values <- demog_data_with_region %>%
     group_by(Region, Year) %>%
@@ -290,11 +297,221 @@ function(input, output){
         final_plot
       }    
     })
+  
+  # Gather data sets to show in app
+  gdp_data <- gdp_data %>% 
+    select(-c(`X`, "SpecialNotes"))
+  
+ 
+  output$enrollmentMap <- renderPlotly({
+    # Aggregate the data to ensure one entry per country
+    aggregated_data <- map_data %>%
+      group_by(iso3c) %>%
+      summarise(
+        male_female_ratio = mean(male_female_ratio),
+        country = first(Country.or.Area)
+      )
+    aggregated_data$gray_value <- 1
+    aggregated_data2 <- map_data %>% 
+      group_by(iso3c) %>%
+      summarise(
+        male_female_ratio = mean(male_female_ratio, na.rm = TRUE),
+        country = first(Country.or.Area)
+      )
+    longitudes <- seq(-180, 180, by = 10)  # Define longitudes for animation
+    
+    if(input$mapProjection == "globe"){
+      plot_geo() %>% 
+        # Add base layer gray for countries
+        add_trace(
+          data = aggregated_data,
+          locations = ~iso3c,
+          z = ~gray_value,
+          locationmode = 'ISO-3',
+          colorscale = list(c(0, "gray"), c(1, "gray")),
+          showscale = FALSE,
+          hoverinfo = "text",
+          marker = list(line = list(width = 0))
+        ) %>% 
+        add_trace(
+          data = aggregated_data2,
+          z = ~ male_female_ratio,
+          color = ~ male_female_ratio,
+          colorscale = list(
+            c(0, "blue"),
+            c(0.5, "white"),
+            c(1.0, "red")
+          ),
+          reversescale = TRUE,
+          text = ~paste(
+            country,
+            ifelse(is.na(male_female_ratio), "",
+                   paste("\n Average Male-to-Female\n Enrollment Ratio:", round(male_female_ratio, 2)))
+          ),
+          hoverinfo = "text",
+          locations = ~iso3c,
+          marker = list(line = list(color = "black", width = 0.5)),
+          zmid = 1.0,
+          colorbar = list(
+            title = "Average Male-to-Female \nEnrollment Ratio",
+            len = 0.8
+          )
+        ) %>% 
+        layout(
+          title = "Average Male-to-Female Enrollment Ratio by Country (1999-2005)",
+          geo = list(
+            showframe = FALSE,
+            showcoastlines = TRUE,
+            coastlinecolor = "black",
+            showocean = TRUE,
+            oceancolor = "lightblue",
+            projection = list(type = "orthographic")
+          )
+        )
+    }
+    else{
+      plot_geo() %>% 
+        # Add base layer gray for countries
+        add_trace(
+          data = aggregated_data,
+          locations = ~iso3c,
+          z = ~gray_value,
+          locationmode = 'ISO-3',
+          colorscale = list(c(0, "gray"), c(1, "gray")),
+          showscale = FALSE,
+          hoverinfo = "text",
+          marker = list(line = list(width = 0))
+        ) %>% 
+        add_trace(
+          data = aggregated_data2,
+          z = ~ male_female_ratio,
+          color = ~ male_female_ratio,
+          colorscale = list(
+            c(0, "blue"),
+            c(0.5, "white"),
+            c(1.0, "red")
+          ),
+          reversescale = TRUE,
+          text = ~paste(
+            country,
+            ifelse(is.na(male_female_ratio), "",
+                   paste("\n Average Male-to-Female\n Enrollment Ratio:", round(male_female_ratio, 2)))
+          ),
+          hoverinfo = "text",
+          locations = ~iso3c,
+          marker = list(line = list(color = "black", width = 0.5)),
+          zmid = 1.0,
+          colorbar = list(
+            title = "Average Male-to-Female \nEnrollment Ratio",
+            len = 0.8
+          )
+        ) %>% 
+        layout(
+          title = "Average Male-to-Female Enrollment Ratio by Country (1999-2005)",
+          geo = list(
+            showframe = FALSE,
+            showcoastlines = TRUE,
+            coastlinecolor = "black",
+            showocean = TRUE,
+            oceancolor = "lightblue",
+            projection = list(type = "equirectangular")
+          )
+        )
+    }
+    
+  })
+  
+  aggregated_data2 <- gdp_long %>%
+    group_by(CountryCode) %>%
+    summarise(
+      Avg_gdp_per_cap = mean(GDP, na.rm = TRUE),
+      country = first(CountryName)
+    )
+  output$gdpMap <- renderPlotly({
+    if(input$mapProjection == "globe"){
+      plot_geo(aggregated_data2) %>%
+        add_trace(
+          z = ~log10(Avg_gdp_per_cap),  # Log-transform the data
+          color = ~log10(Avg_gdp_per_cap),
+          colorscale = "Viridis",
+          text = ~paste(country, "<br>Avg GDP per Capita: $", round(Avg_gdp_per_cap, 2)), # Detailed hover text
+          hoverinfo = "text",
+          locations = ~CountryCode,
+          marker = list(line = list(color = "black", width = 0.5)),
+          colorbar = list(
+            title = "Avg GDP Per Capita",
+            tickvals = log10(c(100, 1000, 10000, 100000)),
+            ticktext = c("$100", "$1k", "$10k", "$100k"),
+            len = 0.8
+          )
+        ) %>%
+        layout(
+          title = list(
+            text = "Average GDP Per Capita by Country (1999-2005)",
+            x = 0.5
+          ),
+          geo = list(
+            showframe = FALSE,
+            showcoastlines = TRUE,
+            coastlinecolor = "black",
+            showocean = TRUE,
+            oceancolor = "lightblue",
+            projection = list(type = "orthographic")
+          ),
+          coloraxis_colorbar = list(
+            title = "Avg GDP<br>Per Capita",
+            tickvals = log10(c(100, 1000, 10000, 100000)),  # Tick positions on the log scale
+            ticktext = c("$100", "$1k", "$10k", "$100k"),    # Human-readable labels
+            len = 0.8
+          )
+        )
+    }
+    else{
+      plot_geo(aggregated_data2) %>%
+        add_trace(
+          z = ~log10(Avg_gdp_per_cap),  # Log-transform the data
+          color = ~log10(Avg_gdp_per_cap),
+          colorscale = "Viridis",
+          text = ~paste(country, "<br>Avg GDP per Capita: $", round(Avg_gdp_per_cap, 2)), # Detailed hover text
+          hoverinfo = "text",
+          locations = ~CountryCode,
+          marker = list(line = list(color = "black", width = 0.5)),
+          colorbar = list(
+            title = "Avg GDP Per Capita",
+            tickvals = log10(c(100, 1000, 10000, 100000)),
+            ticktext = c("$100", "$1k", "$10k", "$100k"),
+            len = 0.8
+          )
+        ) %>%
+        layout(
+          title = list(
+            text = "Average GDP Per Capita by Country (1999-2005)",
+            x = 0.5
+          ),
+          geo = list(
+            showframe = FALSE,
+            showcoastlines = TRUE,
+            coastlinecolor = "black",
+            showocean = TRUE,
+            oceancolor = "lightblue",
+            projection = list(type = "equirectangular")
+          ),
+          coloraxis_colorbar = list(
+            title = "Avg GDP<br>Per Capita",
+            tickvals = log10(c(100, 1000, 10000, 100000)),  # Tick positions on the log scale
+            ticktext = c("$100", "$1k", "$10k", "$100k"),    # Human-readable labels
+            len = 0.8
+          )
+        )
+    }
+  })
+  
   output$chosenTable <- renderDataTable({
     dataset <- switch(input$dataChoice,
                       "gdp" = gdp_data,
                       "demog" = demog_data,
-                      "demog_region" = demog_data_with_region)
+                      "demog_region" = demog_data_with_region,
+                      "map_data" = map_data)
     datatable(
       dataset,
       options = list(

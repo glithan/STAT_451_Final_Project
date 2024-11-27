@@ -128,12 +128,14 @@ enrollment_ratio_data <- female_data %>%
   mutate(male_female_ratio = male_enrollment / female_enrollment)
 
 map_data <- map_data %>% 
-  left_join(enrollment_ratio_data, by = c("iso3c", "long", "lat"))
+  full_join(enrollment_ratio_data, by = c("iso3c", "long", "lat"))
 
 continents <- continents %>% 
   select(c(alpha.3, region))
 
 map_data <- map_data %>% 
-  left_join(continents, by = c("iso3c" = "alpha.3"))
+  full_join(continents, by = c("iso3c" = "alpha.3"))
 
+# Uncomment to save full map dataset if needed
+#write.csv(map_data, "map_data.csv")
 
