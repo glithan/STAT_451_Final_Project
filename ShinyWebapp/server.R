@@ -255,7 +255,7 @@ function(input, output){
           mutate(Group = paste(Subgroup, Income_Low_High, sep = " ")) %>%  # Combine variables into a single grouping
           filter(Income_Low_High != "Other") %>% 
           ggplot(aes(x = Year, y = Average_Enrollment, fill = Group)) +
-          labs(title = "How does a country's income level affect the enrollment rates of \nmen and women between from 1999 to 2005?",
+          labs(title = "How does a country's income level affect the average enrollment of \nmen and women between from 1999 to 2005?",
                subtitle = "Average global enrollment over time by gender and income level",
                x = "Year",
                y = "Average Enrollment",
@@ -281,7 +281,8 @@ function(input, output){
           legend.title = element_text(size = 15),
           legend.text = element_text(size = 15),
           plot.title = element_text(size = 22),
-          plot.caption = element_text(size = 13)
+          plot.caption = element_text(size = 13),
+          plot.subtitle = element_text(size = 13)
           )
         
         final_plot <- plain_plot

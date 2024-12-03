@@ -8,9 +8,10 @@
 #
 
 library(shiny)
+library(plotly)
 
 fluidPage(
-  titlePanel("Choose a Plot"),
+  titlePanel("Country's income on the enrollment rates of men and women around the world from 1999 to 2005"),
   
   # Main Tabset Panel
   tabsetPanel(
